@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Empresas - InfoGuia{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+  <a href="/" class="topbar-breadcrumb-item">Home</a>
+  <span class="topbar-breadcrumb-separator">/</span>
+  <span class="topbar-breadcrumb-current">Empresas</span>
+</div>
+{% endblock %}
+
+{% block topbar_actions %}
+<div class="flex gap-2">
+  <a href="/api/export/companies.csv?q={{ q }}" class="btn btn-secondary btn-sm">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+    </svg>
+    CSV
+  </a>
+  <a href="/api/export/companies.json?q={{ q }}" class="btn btn-secondary btn-sm">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+    </svg>
+    JSON
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Empresas</h1>
+  <p class="page-subtitle">{{ stats.companies | default(0) }} empresas scrapeadas de infoguia.com</p>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <form method="get" action="/companies" class="flex gap-3 w-full">
+    <!-- Search -->
+    <div class="search-input flex-1" style="max-width: 400px;">
+      <svg class="search-input-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre o CLTE..." class="input">
+    </div>
+    
+    <!-- City Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Ciudad:</label>
+      <select name="city" class="select" style="min-width: 150px;">
+        <option value="">Todas</option>
+        {% for city in cities | default([]) %}
+        <option value="{{ city }}" {% if city == selected_city | default('') %}selected{% endif %}>{{ city }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <!-- Category Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Categoría:</label>
+      <select name="category" class="select" style="min-width: 150px;">
+        <option value="">Todas</option>
+        {% for cat in categories | default([]) %}
+        <option value="{{ cat.name }}" {% if cat.name == selected_category | default('') %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <!-- Verified Toggle -->
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" name="verified_only" value="true" {% if verified_only | default(false) %}checked{% endif %}>
+      <span class="text-sm text-secondary">Solo verificadas</span>
+    </label>
+    
+    <!-- WhatsApp Toggle -->
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" name="has_whatsapp" value="true" {% if has_whatsapp | default(false) %}checked{% endif %}>
+      <span class="text-sm text-secondary">Con WhatsApp</span>
+    </label>
+    
+    <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+  </form>
+</div>
+
+<!-- Results Summary -->
+<div class="flex items-center justify-between mb-4">
+  <div class="text-sm text-secondary">
+    Mostrando <span class="font-semibold text-primary">{{ companies | length }}</span> de 
+    <span class="font-semibold text-primary">{{ stats.companies | default(0) }}</span> empresas
+  </div>
+</div>
+
+<!-- Table -->
+<div class="table-container">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Ubicación</th>
+        <th>Contacto</th>
+        <th>Rating</th>
+        <th>Redes</th>
+        <th>Estado</th>
+        <th style="width: 50px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for company in companies | default([]) %}
+      <tr>
+        <td>
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <a href="/companies/{{ company.clte }}" class="table-link">{{ company.name }}</a>
+              <div class="text-xs text-secondary mt-1">CLTE {{ company.clte }}</div>
+            </div>
+          </div>
+        </td>
+        
+        <td>
+          <div class="text-sm">{{ company.city | default('-') }}</div>
+          {% if company.address | default('') %}
+          <div class="text-xs text-secondary mt-1">{{ company.address | truncate(40) }}</div>
+          {% endif %}
+        </td>
+        
+        <td>
+          <div class="flex flex-col gap-1">
+            {% for phone in company.phones | default([]) | slice(2) %}
+            <div class="text-sm flex items-center gap-1">
+              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20" class="text-secondary">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+              </svg>
+              <span class="text-secondary">{{ phone }}</span>
+            </div>
+            {% endfor %}
+            {% for wa in company.whatsapp | default([]) | slice(2) %}
+            <div class="text-sm flex items-center gap-1">
+              <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" class="text-success">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0017.472 3.5"/>
+              </svg>
+              <span class="text-success">{{ wa }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </td>
+        
+        <td>
+          {% if company.rating_pct %}
+          <div class="flex items-center gap-2">
+            <div class="flex">
+              {% for i in range(5) %}
+                {% if i < (company.rating_pct / 20) | int %}
+                  <svg width="14" height="14" fill="#f59e0b" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                {% else %}
+                  <svg width="14" height="14" fill="#3f3f46" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <span class="text-xs text-secondary">{{ company.rating_pct | int }}%</span>
+          </div>
+          {% else %}
+          <span class="text-secondary">-</span>
+          {% endif %}
+        </td>
+        
+        <td>
+          <div class="flex gap-1">
+            {% if company.has_instagram | default(false) %}
+            <span class="badge badge-default">IG</span>
+            {% endif %}
+            {% if company.has_facebook | default(false) %}
+            <span class="badge badge-default">FB</span>
+            {% endif %}
+            {% if company.has_twitter | default(false) %}
+            <span class="badge badge-default">TW</span>
+            {% endif %}
+            {% if not (company.has_instagram or company.has_facebook or company.has_twitter) %}
+            <span class="text-secondary">-</span>
+            {% endif %}
+          </div>
+        </td>
+        
+        <td>
+          {% if company.verified | default(false) %}
+          <span class="badge badge-success">✓ Verificada</span>
+          {% else %}
+          <span class="badge badge-default">No verificada</span>
+          {% endif %}
+        </td>
+        
+        <td>
+          <a href="/companies/{{ company.clte }}" class="btn btn-ghost btn-sm">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7">
+          <div class="empty-state">
+            <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <div class="empty-state-title">No se encontraron empresas</div>
+            <div class="empty-state-description">Intenta ajustar los filtros o espera a que el scraper recopile más datos</div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+{% if total_pages | default(1) > 1 %}
+<div class="pagination">
+  <div class="pagination-info">
+    Página {{ current_page | default(1) }} de {{ total_pages }}
+  </div>
+  <div class="pagination-controls">
+    {% if current_page | default(1) > 1 %}
+    <a href="?page={{ current_page - 1 }}&q={{ q }}&city={{ selected_city | default('') }}&category={{ selected_category | default('') }}&verified_only={{ verified_only | default('') }}&has_whatsapp={{ has_whatsapp | default('') }}" class="pagination-btn">
+      ← Anterior
+    </a>
+    {% else %}
+    <span class="pagination-btn disabled">← Anterior</span>
+    {% endif %}
+    
+    {% if current_page | default(1) < total_pages %}
+    <a href="?page={{ current_page + 1 }}&q={{ q }}&city={{ selected_city | default('') }}&category={{ selected_category | default('') }}&verified_only={{ verified_only | default('') }}&has_whatsapp={{ has_whatsapp | default('') }}" class="pagination-btn">
+      Siguiente →
+    </a>
+    {% else %}
+    <span class="pagination-btn disabled">Siguiente →</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

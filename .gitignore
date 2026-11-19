@@ -1,0 +1,44 @@
+# Variables de entorno (contiene secretos)
+.env
+
+# Datos scrapeados (pueden ser grandes)
+data/raw/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Cache y logs
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# Docker volumes (datos persistentes)
+pgdata/
+redisdata/
+
+# Resultados de pilot
+pilot_results.json
+
+# Build
+build/
+dist/
+*.egg-info/

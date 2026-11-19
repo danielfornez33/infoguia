@@ -1,0 +1,105 @@
+<div class="flex flex-wrap items-center gap-2 mb-4">
+  <span class="badge">pending {{ q.pending }}</span>
+  <span class="badge">delayed {{ q.delayed }}</span>
+  <span class="badge">dead {{ q.dead }}</span>
+  <span class="badge">stream {{ q.stream }}</span>
+  <div class="ml-auto flex gap-2">
+    <button class="btn btn-ghost" data-post="/api/queue/retry">Reintentar</button>
+    <button class="btn btn-danger" data-post="/api/queue/purge">Purgar cola</button>
+  </div>
+</div>
+
+<details open class="panel mb-4">
+  <summary class="panel-title">Pendientes ({{ pending|length }})</summary>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>ID</th><th>Tipo</th><th>URL</th><th>Prioridad</th><th>Intentos</th></tr></thead>
+      <tbody>
+      {% for row in pending %}
+        <tr>
+          <td class="mono">{{ row.id }}</td>
+          <td>{{ row.kind }}</td>
+          <td class="truncate max-w-xl" title="{{ row.url }}">{{ row.url }}</td>
+          <td>{{ row.priority }}</td>
+          <td>{{ row.attempts or 0 }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">Sin pendientes</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<details class="panel mb-4">
+  <summary class="panel-title">En proceso ({{ active|length }})</summary>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>ID</th><th>Tipo</th><th>URL</th><th>Worker</th><th>Idle</th><th>Entregas</th></tr></thead>
+      <tbody>
+      {% for row in active %}
+        <tr>
+          <td class="mono">{{ row.id }}</td>
+          <td>{{ row.kind }}</td>
+          <td class="truncate max-w-lg" title="{{ row.url }}">{{ row.url }}</td>
+          <td class="mono">{{ row.consumer }}</td>
+          <td>{{ row.idle_ms }} ms</td>
+          <td>{{ row.deliveries }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty">Sin trabajos en proceso</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<details class="panel mb-4">
+  <summary class="panel-title">Fallidos ({{ dead|length }})</summary>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>ID</th><th>Tipo</th><th>URL</th><th>Error</th><th>Intentos</th></tr></thead>
+      <tbody>
+      {% for row in dead %}
+        <tr>
+          <td class="mono">{{ row.id }}</td>
+          <td>{{ row.kind }}</td>
+          <td class="truncate max-w-md" title="{{ row.url }}">{{ row.url }}</td>
+          <td class="text-rose-300 truncate max-w-md" title="{{ row.error }}">{{ row.error }}</td>
+          <td>{{ row.attempts }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">Sin fallidos</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<details class="panel">
+  <summary class="panel-title">Seeds ({{ seeds|length }})</summary>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>ID</th><th>URL</th><th>Tipo</th><th>Intervalo</th><th>Próxima</th><th>Activa</th><th></th></tr></thead>
+      <tbody>
+      {% for seed in seeds %}
+        <tr>
+          <td>{{ seed.id }}</td>
+          <td class="truncate max-w-xl" title="{{ seed.url }}">{{ seed.url }}</td>
+          <td>{{ seed.kind }}</td>
+          <td>{{ seed.interval_seconds }} s</td>
+          <td>{{ seed.next_run_at }}</td>
+          <td>{{ "sí" if seed.enabled else "no" }}</td>
+          <td>
+            <form method="post" action="/api/seeds/{{ seed.id }}/toggle">
+              <button class="btn btn-ghost" type="submit">{{ "Desactivar" if seed.enabled else "Activar" }}</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="empty">Sin seeds</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>

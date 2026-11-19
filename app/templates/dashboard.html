@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - InfoGuia{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+  <span class="topbar-breadcrumb-current">Dashboard</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-subtitle">Vista general del sistema de scraping</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Empresas</div>
+    <div class="stat-value">{{ stats.companies | default(0) }}</div>
+    <div class="stat-change positive">
+      <span>↑</span>
+      <span>{{ stats.companies_today | default(0) }} hoy</span>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">Contactos</div>
+    <div class="stat-value">{{ stats.contacts | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">{{ stats.phones | default(0) }} teléfonos</span>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">WhatsApp</div>
+    <div class="stat-value text-success">{{ stats.whatsapp | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">{{ stats.emails | default(0) }} emails</span>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">Productos</div>
+    <div class="stat-value">{{ stats.products | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">{{ stats.categories | default(0) }} categorías</span>
+    </div>
+  </div>
+</div>
+
+<!-- Queue Status -->
+<div class="card mb-6">
+  <div class="card-header">
+    <div class="card-title">Estado de la Cola</div>
+    <a href="/queue" class="btn btn-sm btn-ghost">Ver detalles →</a>
+  </div>
+  <div class="card-body">
+    <div class="stats-grid" style="grid-template-columns: repeat(5, 1fr);">
+      <div>
+        <div class="text-xs text-secondary mb-2">Pendientes</div>
+        <div class="text-lg font-semibold">{{ stats.queue.pending | default(0) }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-secondary mb-2">Procesando</div>
+        <div class="text-lg font-semibold">{{ stats.queue.active | default(0) }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-secondary mb-2">Delayed</div>
+        <div class="text-lg font-semibold">{{ stats.queue.delayed | default(0) }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-secondary mb-2">Fallidos</div>
+        <div class="text-lg font-semibold text-danger">{{ stats.queue.failed | default(0) }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-secondary mb-2">Workers</div>
+        <div class="text-lg font-semibold text-success">{{ stats.queue.workers | default(0) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Actividad Reciente</div>
+    <a href="/logs" class="btn btn-sm btn-ghost">Ver todos →</a>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Nivel</th>
+            <th>Mensaje</th>
+            <th>URL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in stats.recent_logs | default([]) | slice(10) %}
+          <tr>
+            <td class="text-secondary">{{ log.timestamp | default('-') }}</td>
+            <td>
+              {% if log.level | default('') == 'INFO' %}
+                <span class="badge badge-info">{{ log.level }}</span>
+              {% elif log.level | default('') == 'WARNING' %}
+                <span class="badge badge-warning">{{ log.level }}</span>
+              {% elif log.level | default('') == 'ERROR' %}
+                <span class="badge badge-danger">{{ log.level }}</span>
+              {% else %}
+                <span class="badge badge-default">{{ log.level | default('-') }}</span>
+              {% endif %}
+            </td>
+            <td>{{ log.message | default('-') }}</td>
+            <td class="text-secondary text-xs">{{ log.url | default('-') | truncate(50) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-center text-secondary" style="padding: 40px;">
+              Sin actividad reciente
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Ajustes - InfoGuia{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+  <a href="/" class="topbar-breadcrumb-item">Home</a>
+  <span class="topbar-breadcrumb-separator">/</span>
+  <span class="topbar-breadcrumb-current">Ajustes</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Ajustes del Sistema</h1>
+  <p class="page-subtitle">Configuración del scraper y del panel</p>
+</div>
+
+<form method="post" action="/api/settings">
+  <!-- Scraping Configuration -->
+  <div class="card mb-6">
+    <div class="card-header">
+      <div class="card-title">Configuración de Scraping</div>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="input-group">
+          <label class="input-label">Requests por segundo</label>
+          <input type="number" name="crawl_rps" value="{{ s.crawl_rps | default(0.2) }}" step="0.1" min="0.1" max="10" class="input">
+          <div class="text-xs text-secondary mt-1">Controla la velocidad del scraper</div>
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label">Burst de requests</label>
+          <input type="number" name="crawl_burst" value="{{ s.crawl_burst | default(5) }}" min="1" max="50" class="input">
+          <div class="text-xs text-secondary mt-1">Requests simultáneos permitidos</div>
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label">Máximo de páginas por listing</label>
+          <input type="number" name="max_pages_per_listing" value="{{ s.max_pages_per_listing | default(10) }}" min="1" max="100" class="input">
+          <div class="text-xs text-secondary mt-1">Profundidad de paginación</div>
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label">Timeout HTTP (segundos)</label>
+          <input type="number" name="http_timeout" value="{{ s.http_timeout | default(30) }}" min="5" max="120" class="input">
+          <div class="text-xs text-secondary mt-1">Tiempo máximo de espera por respuesta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rate Limiting -->
+  <div class="card mb-6">
+    <div class="card-header">
+      <div class="card-title">Límites y Restricciones</div>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="input-group">
+          <label class="input-label">Tope diario de requests</label>
+          <input type="number" name="daily_cap" value="{{ s.daily_cap | default(8000) }}" min="100" max="100000" class="input">
+          <div class="text-xs text-secondary mt-1">Máximo de requests por día</div>
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label">Reintentos máximos</label>
+          <input type="number" name="max_retries" value="{{ s.max_retries | default(3) }}" min="0" max="10" class="input">
+          <div class="text-xs text-secondary mt-1">Intentos antes de marcar como fallido</div>
+        </div>
+      </div>
+      
+      <div class="mt-6">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="off_peak_only" value="true" {% if s.off_peak_only | default(false) %}checked{% endif %}>
+          <div>
+            <div class="text-sm font-medium">Solo procesar en horas off-peak</div>
+            <div class="text-xs text-secondary">Restringe el scraping a horas de baja actividad</div>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="card mb-6">
+    <div class="card-header">
+      <div class="card-title">Características</div>
+    </div>
+    <div class="card-body">
+      <div class="flex flex-col gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="discovery_enabled" value="true" {% if s.discovery_enabled | default(true) %}checked{% endif %}>
+          <div>
+            <div class="text-sm font-medium">Descubrimiento automático</div>
+            <div class="text-xs text-secondary">Descubre nuevas URLs automáticamente</div>
+          </div>
+        </label>
+        
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="products_enabled" value="true" {% if s.products_enabled | default(true) %}checked{% endif %}>
+          <div>
+            <div class="text-sm font-medium">Scraping de productos</div>
+            <div class="text-xs text-secondary">Extrae información de productos</div>
+          </div>
+        </label>
+        
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="conditional_requests" value="true" {% if s.conditional_requests | default(true) %}checked{% endif %}>
+          <div>
+            <div class="text-sm font-medium">Requests condicionales</div>
+            <div class="text-xs text-secondary">Usa ETag/Last-Modified para reducir carga</div>
+          </div>
+        </label>
+        
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="proxy_rotation_enabled" value="true" {% if s.proxy_rotation_enabled | default(false) %}checked{% endif %}>
+          <div>
+            <div class="text-sm font-medium">Rotación de proxies</div>
+            <div class="text-xs text-secondary">Rota entre múltiples proxies (requiere configuración)</div>
+          </div>
+        </label>
+        
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="rotate_user_agents" value="true" {% if s.rotate_user_agents | default(false) %}checked{% endif %}>
+          <div>
+            <div class="text-sm font-medium">Rotación de User-Agent</div>
+            <div class="text-xs text-secondary">Rota entre diferentes navegadores</div>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex gap-3">
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a href="/settings" class="btn btn-secondary">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

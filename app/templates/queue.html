@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Cola de Scraping - InfoGuia{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+  <a href="/" class="topbar-breadcrumb-item">Home</a>
+  <span class="topbar-breadcrumb-separator">/</span>
+  <span class="topbar-breadcrumb-current">Cola</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Cola de Scraping</h1>
+  <p class="page-subtitle">Estado del sistema de scraping en tiempo real</p>
+</div>
+
+<!-- Queue Stats -->
+<div class="stats-grid mb-6">
+  <div class="stat-card">
+    <div class="stat-label">Pendientes</div>
+    <div class="stat-value">{{ queue_stats.pending | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">Esperando procesamiento</span>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">En Cola</div>
+    <div class="stat-value text-info">{{ queue_stats.queued | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">Listos para procesar</span>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">Procesando</div>
+    <div class="stat-value text-primary">{{ queue_stats.active | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">Scraping activo</span>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">Completados</div>
+    <div class="stat-value text-success">{{ queue_stats.done | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">Exitosos hoy</span>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">Fallidos</div>
+    <div class="stat-value text-danger">{{ queue_stats.failed | default(0) }}</div>
+    <div class="stat-change">
+      <span class="text-secondary">Requieren atención</span>
+    </div>
+  </div>
+</div>
+
+<!-- Workers Status -->
+<div class="card mb-6">
+  <div class="card-header">
+    <div class="card-title">Workers Activos</div>
+    <span class="badge badge-success">{{ workers | length }} online</span>
+  </div>
+  <div class="card-body">
+    {% if workers %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for worker in workers %}
+      <div class="flex items-center gap-3 p-3 bg-tertiary rounded-md">
+        <div class="w-2 h-2 bg-success rounded-full"></div>
+        <div class="flex-1">
+          <div class="text-sm font-medium">{{ worker.id }}</div>
+          <div class="text-xs text-secondary">{{ worker.status | default('active') }}</div>
+        </div>
+        <div class="text-xs text-secondary">
+          {{ worker.processed | default(0) }} procesados
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-title">No hay workers activos</div>
+      <div class="empty-state-description">Inicia el worker para comenzar el scraping</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent Jobs -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Trabajos Recientes</div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Intentos</th>
+            <th>Última Actualización</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in recent_jobs | default([]) %}
+          <tr>
+            <td>
+              <div class="text-sm">{{ job.url | truncate(60) }}</div>
+            </td>
+            <td>
+              <span class="badge badge-default">{{ job.kind | default('unknown') }}</span>
+            </td>
+            <td>
+              {% if job.status == 'pending' %}
+                <span class="badge badge-default">Pendiente</span>
+              {% elif job.status == 'processing' %}
+                <span class="badge badge-info">Procesando</span>
+              {% elif job.status == 'done' %}
+                <span class="badge badge-success">Completado</span>
+              {% elif job.status == 'failed' %}
+                <span class="badge badge-danger">Fallido</span>
+              {% else %}
+                <span class="badge badge-default">{{ job.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="text-secondary">{{ job.priority | default(0) }}</span>
+            </td>
+            <td>
+              <span class="{% if job.attempts > 0 %}text-warning{% else %}text-secondary{% endif %}">
+                {{ job.attempts | default(0) }}
+              </span>
+            </td>
+            <td class="text-secondary text-xs">
+              {{ job.updated_at.strftime('%Y-%m-%d %H:%M') if job.updated_at else '-' }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <div class="empty-state-title">No hay trabajos recientes</div>
+                <div class="empty-state-description">Los trabajos aparecerán aquí cuando el scraper esté activo</div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Auto-refresh -->
+<script>
+  // Auto-refresh every 5 seconds
+  setTimeout(() => {
+    window.location.reload();
+  }, 5000);
+</script>
+{% endblock %}

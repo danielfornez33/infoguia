@@ -1,0 +1,58 @@
+[project]
+name = "infoguia"
+version = "0.1.0"
+description = "InfoGuia BI - Web scraper y panel de datos"
+requires-python = ">=3.12"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "N",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "PT",
+    "SIM",
+    "TCH",
+    "RUF",
+]
+ignore = [
+    "E501",
+    "RUF001",
+    "SIM105",
+    "A005",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N802", "N803"]
+"pilot_scrape.py" = ["N802", "N806"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "app.parsers",
+    "app.queue",
+    "app.worker",
+    "app.scheduler",
+    "app.main",
+    "app.settings_store",
+    "app.robots",
+    "app.adapters",
+]
+ignore_errors = true

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - InfoGuia{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+  <a href="/" class="topbar-breadcrumb-item">Home</a>
+  <span class="topbar-breadcrumb-separator">/</span>
+  <span class="topbar-breadcrumb-current">Logs</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Logs del Sistema</h1>
+  <p class="page-subtitle">Actividad y eventos del scraper en tiempo real</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Eventos Recientes</div>
+    <button class="btn btn-secondary btn-sm" onclick="refreshLogs()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Actualizar
+    </button>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div id="logs-container" style="height: 600px; overflow-y: auto; padding: 16px; font-family: var(--font-mono); font-size: 13px;">
+      <div id="logs-content" class="flex flex-col gap-2">
+        {% for log in recent_logs | default([]) %}
+        <div class="flex gap-3 py-2 px-3 rounded-md hover:bg-tertiary">
+          <div class="text-tertiary text-xs" style="min-width: 140px;">
+            {{ log.timestamp.strftime('%H:%M:%S') if log.timestamp else '-' }}
+          </div>
+          <div class="{% if log.level == 'INFO' %}text-info{% elif log.level == 'WARNING' %}text-warning{% elif log.level == 'ERROR' %}text-danger{% else %}text-secondary{% endif %}" style="min-width: 70px;">
+            {{ log.level | default('INFO') }}
+          </div>
+          <div class="flex-1 text-primary">{{ log.message }}</div>
+          {% if log.url %}
+          <div class="text-secondary text-xs" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ log.url }}
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <div class="empty-state-title">No hay logs disponibles</div>
+          <div class="empty-state-description">Los eventos del sistema aparecerán aquí cuando el scraper esté activo</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function refreshLogs() {
+  fetch('/api/logs/recent')
+    .then(res => res.json())
+    .then(logs => {
+      const container = document.getElementById('logs-content');
+      container.innerHTML = '';
+      
+      if (logs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-title">No hay logs disponibles</div>
+            <div class="empty-state-description">Los eventos del sistema aparecerán aquí cuando el scraper esté activo</div>
+          </div>
+        `;
+        return;
+      }
+      
+      logs.forEach(log => {
+        const logEl = document.createElement('div');
+        logEl.className = 'flex gap-3 py-2 px-3 rounded-md hover:bg-tertiary';
+        
+        const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('es-VE') : '-';
+        const levelClass = log.level === 'INFO' ? 'text-info' : log.level === 'WARNING' ? 'text-warning' : log.level === 'ERROR' ? 'text-danger' : 'text-secondary';
+        
+        logEl.innerHTML = `
+          <div class="text-tertiary text-xs" style="min-width: 140px;">${timestamp}</div>
+          <div class="${levelClass}" style="min-width: 70px;">${log.level || 'INFO'}</div>
+          <div class="flex-1 text-primary">${log.message || ''}</div>
+          ${log.url ? `<div class="text-secondary text-xs" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.url}</div>` : ''}
+        `;
+        
+        container.appendChild(logEl);
+      });
+    });
+}
+
+// Auto-refresh every 5 seconds
+setInterval(refreshLogs, 5000);
+</script>
+{% endblock %}
