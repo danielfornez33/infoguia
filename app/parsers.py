@@ -598,6 +598,30 @@ def extract_branches_enriched(soup: BeautifulSoup) -> list[dict]:
     return list(branches.values())
 
 
+def extract_full_description(soup: BeautifulSoup) -> str:
+    modal_desc = soup.select_one("#fullDescription .modal-description-text")
+    if modal_desc:
+        return clean(modal_desc.get_text(strip=True))
+    return ""
+
+
+def extract_categories_from_profile(soup: BeautifulSoup) -> list[dict]:
+    categories = []
+    seen_ids: set[str] = set()
+    for node in soup.select(".profile-sec-categories-btns a[href*='/ct.asp']"):
+        href = node.get("href")
+        if not href:
+            continue
+        title = clean(node.get("title") or node.get_text(strip=True))
+        if not title:
+            continue
+        category_id = query_value(href, "cat")
+        if category_id and category_id not in seen_ids:
+            seen_ids.add(category_id)
+            categories.append({"cat_id": category_id, "name": title})
+    return categories
+
+
 def extract_socials_enriched(soup: BeautifulSoup) -> list[dict]:
     socials = []
     seen_urls: set[str] = set()
@@ -610,6 +634,22 @@ def extract_socials_enriched(soup: BeautifulSoup) -> list[dict]:
         seen_urls.add(href)
         socials.append({"network": network_from_url(href), "url": href})
     return socials
+
+
+def extract_categories_from_profile(soup: BeautifulSoup) -> list[dict]:
+    categories = []
+    seen_ids: set[str] = set()
+    # Buscar específicamente en la sección de categorías del perfil
+    for node in soup.select(".profile-sec-categories-btns a[href*='/ct.asp']"):
+        href = node.get("href")
+        if not href:
+            continue
+        category_id = query_value(href, "cat")
+        title = clean(node.get("title") or node.get_text(strip=True))
+        if category_id and title and category_id not in seen_ids:
+            seen_ids.add(category_id)
+            categories.append({"cat_id": category_id, "name": title})
+    return categories
 
 
 def extract_categories_enriched(soup: BeautifulSoup, page_url: str) -> list[dict]:
@@ -678,6 +718,13 @@ def parse_products(soup: BeautifulSoup, page_url: str) -> list[dict]:
     return products
 
 
+def extract_full_description(soup: BeautifulSoup) -> str:
+    modal_desc = soup.select_one("#fullDescription .modal-description-text")
+    if modal_desc:
+        return clean(modal_desc.get_text(strip=True))
+    return ""
+
+
 def extract_structured_schedule(soup: BeautifulSoup) -> dict | None:
     schedule_node = multi_select_one(soup, SCHEDULE_SELECTORS)
     if not schedule_node:
@@ -708,13 +755,21 @@ def parse_profile(html: str, page_url: str) -> dict:
     name = text_of(multi_select_one(soup, NAME_SELECTORS_PROFILE))
     branches = extract_branches_enriched(soup)
     socials = extract_socials_enriched(soup)
-    categories = extract_categories_enriched(soup, page_url)
+    
+    # Extraer categorías del perfil (más específico que el general)
+    categories = extract_categories_from_profile(soup)
+    if not categories:
+        categories = extract_categories_enriched(soup, page_url)
+    
     products = parse_products(soup, page_url)
 
     store = soup.select_one(STORE_LINK)
     store_url = urljoin(page_url, store.get("href")) if store and store.get("href") else ""
 
-    description = extract_meta_description(soup)
+    # Priorizar descripción completa del modal
+    description = extract_full_description(soup)
+    if not description:
+        description = extract_meta_description(soup)
     if not description:
         desc_node = multi_select_one(soup, DESCRIPTION_SELECTORS)
         description = text_of(desc_node)
